@@ -4,17 +4,24 @@ import { hasBotAttribute } from "../data/botAttributes.js";
 
 const weaponRestrictions = ["MeleeOnly", "PrimaryOnly", "SecondaryOnly"];
 const behaviorModifiers = ["Idler", "Mobber"];
+const classAliases = new Map([
+  ["demo", "Demoman"],
+  ["demoman", "Demoman"],
+  ["heavy", "HeavyWeapons"],
+  ["heavyweapons", "HeavyWeapons"],
+]);
 
 export function validateBot(bot) {
   const errors = [];
   const warnings = [];
   const hasTemplate = Boolean(bot.template || bot.templateId);
+  const normalizedClass = normalizeClassId(bot.class);
 
   if (!bot.class && !hasTemplate) {
     errors.push("Class is required unless a template is selected.");
   }
 
-  if (bot.class && !tfClasses.some((tfClass) => tfClass.id === bot.class)) {
+  if (bot.class && !tfClasses.some((tfClass) => tfClass.id === normalizedClass)) {
     errors.push(`Class "${bot.class}" is not one of the known TF2 classes.`);
   }
 
@@ -31,9 +38,9 @@ export function validateBot(bot) {
   }
 
   if (!bot.classIcon) {
-    errors.push("Class icon is required.");
+    warnings.push("Class icon is empty; TF2 can load this, but the editor preview may be less specific.");
   } else if (!hasClassIcon(bot.classIcon)) {
-    errors.push(`Class icon "${bot.classIcon}" is not in the starter icon list.`);
+    warnings.push(`Class icon "${bot.classIcon}" is not in the starter icon list.`);
   }
 
   if (bot.weaponRestrictions && !weaponRestrictions.includes(bot.weaponRestrictions)) {
@@ -72,6 +79,14 @@ export function validateBot(bot) {
   return { errors, warnings };
 }
 
+function normalizeClassId(classId) {
+  if (!classId) {
+    return classId;
+  }
+
+  return classAliases.get(String(classId).toLowerCase()) ?? classId;
+}
+
 function findDuplicates(values) {
   const seen = new Set();
   const duplicates = new Set();
@@ -93,3 +108,5 @@ function uniqueValues(values) {
 function isPopIdentifier(value) {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value);
 }
+
+

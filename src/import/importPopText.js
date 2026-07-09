@@ -7,6 +7,13 @@ import { createWave } from "../state/createWave.js";
 import { createWaveSpawn } from "../state/createWaveSpawn.js";
 import { parsePopText, summarizePopTree } from "./parsePopText.js";
 
+const classAliases = new Map([
+  ["demo", "Demoman"],
+  ["demoman", "Demoman"],
+  ["heavy", "HeavyWeapons"],
+  ["heavyweapons", "HeavyWeapons"],
+]);
+
 export function importPopText(source, options = {}) {
   const warnings = [];
   const tree = parsePopText(source);
@@ -157,7 +164,7 @@ function importBot(node) {
   return createBot({
     template: getFieldValue(node, "Template") ?? "",
     name: getFieldValue(node, "Name") ?? "",
-    class: getFieldValue(node, "Class") ?? "",
+    class: normalizeClassName(getFieldValue(node, "Class") ?? ""),
     skill: getFieldValue(node, "Skill") ?? "",
     health: getFieldValue(node, "Health") ?? "",
     classIcon: getFieldValue(node, "ClassIcon") ?? "",
@@ -189,13 +196,59 @@ function inferMapId(root) {
   const doneOutput = findChildBlock(wave, "DoneOutput");
   const startTarget = getFieldValue(startOutput, "Target");
   const doneTarget = getFieldValue(doneOutput, "Target");
+  const values = collectFieldValues(root);
+  const startingCurrency = Number(getFieldValue(root, "StartingCurrency"));
 
-  const exactMatches = maps.filter((map) => map.startWaveOutput === startTarget && map.doneOutput === doneTarget);
-  if (exactMatches.length === 1) {
-    return exactMatches[0].id;
+  const rankedMaps = maps
+    .map((map) => ({ map, score: scoreMap(map, { startTarget, doneTarget, values, startingCurrency }) }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  return rankedMaps[0]?.map.id ?? "";
+}
+
+function scoreMap(map, context) {
+  let score = 0;
+
+  if (map.startWaveOutput === context.startTarget) {
+    score += 3;
   }
 
-  return exactMatches[0]?.id ?? "";
+  if (map.doneOutput === context.doneTarget) {
+    score += 3;
+  }
+
+  for (const tankPath of map.tankPaths) {
+    if (context.values.has(tankPath)) {
+      score += 5;
+    }
+  }
+
+  for (const spawnName of map.spawnNames) {
+    if (context.values.has(spawnName)) {
+      score += 2;
+    }
+  }
+
+  if (Number.isFinite(context.startingCurrency) && context.startingCurrency === map.defaultStartingCurrency) {
+    score += 1;
+  }
+
+  return score;
+}
+
+function collectFieldValues(node, values = new Set()) {
+  for (const child of node?.children ?? []) {
+    if (child.type === "field" && child.value) {
+      values.add(child.value);
+    }
+
+    if (child.type === "block") {
+      collectFieldValues(child, values);
+    }
+  }
+
+  return values;
 }
 
 function findChildBlock(node, name) {
@@ -220,7 +273,14 @@ function warnUnsupportedBlocks(node, supportedBlockNames, label, warnings) {
   }
 }
 
+function normalizeClassName(className) {
+  if (!className) {
+    return className;
+  }
+
+  return classAliases.get(String(className).toLowerCase()) ?? className;
+}
+
 function normalizeYesNo(value) {
   return String(value).toLowerCase() === "yes" ? "yes" : "no";
 }
-
