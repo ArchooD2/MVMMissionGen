@@ -142,6 +142,7 @@ function render() {
 
   renderActiveEditor(activeTab.id, activeSection.content, {
     selectedMap,
+    wave,
     spawnLocations,
     tankPaths,
   });
@@ -194,7 +195,7 @@ function renderActiveEditor(editorId, content, context) {
       break;
     case "wave":
       renderWaveEditor(content, {
-        wave,
+        wave: context.wave,
         waves,
         activeWaveIndex,
         currentWaveSpawn: waveSpawn,
@@ -345,4 +346,5 @@ function createElement(tagName, className = "") {
 }
 
 render();
+
 
