@@ -3,7 +3,7 @@ import { applyMapDefaults, updatePopulation } from "../state/createPopulation.js
 import { exportPopulation } from "../export/exportPopulation.js";
 import { validatePopulation } from "../validation/validatePopulation.js";
 
-export function renderPopulationEditor(root, { population, waves, wave, missions = [], onChange }) {
+export function renderPopulationEditor(root, { population, waves, missions, onChange, onExport }) {
   root.innerHTML = "";
 
   const controls = createElement("form", "panel controls");
@@ -12,13 +12,34 @@ export function renderPopulationEditor(root, { population, waves, wave, missions
   const previewStack = createElement("div", "preview-stack");
   root.append(controls, previewStack);
 
-  const waveList = waves ?? (wave ? [wave] : []);
-  const validation = validatePopulation(population, waveList, missions);
+  const waveList = (waves ?? []).filter((wave) => wave && Array.isArray(wave.waveSpawns));
+  const missionList = missions ?? [];
+  const validation = validatePopulation(population, waveList, missionList);
+  const exportButton = createElement("button", "button");
+  exportButton.type = "button";
+  exportButton.textContent = "Export .pop";
+  exportButton.disabled = typeof onExport !== "function";
+  exportButton.addEventListener("click", () => {
+    if (typeof onExport === "function") {
+      onExport();
+    }
+  });
+  controls.append(exportButton);
 
   renderControls(controls, population, onChange);
   renderValidation(controls, validation);
-  renderPreview(previewStack, "Current Population Object", JSON.stringify({ ...population, missions, waves: waveList }, null, 2));
-  renderPreview(previewStack, "Population .pop Preview", exportPopulation(population, waveList, missions), validation);
+  renderPreview(
+    previewStack,
+    "Current Population Object",
+    JSON.stringify({ ...population, missions: missionList, waves: waveList }, null, 2)
+  );
+  
+  renderPreview(
+    previewStack,
+    "Population .pop Preview",
+    exportPopulation(population, waveList, missionList),
+    validation
+  );
 }
 
 function renderControls(root, population, onChange) {

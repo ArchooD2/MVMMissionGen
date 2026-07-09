@@ -10,6 +10,7 @@ import { renderMissionEditor } from "./ui/renderMissionEditor.js";
 import { renderPopulationEditor } from "./ui/renderPopulationEditor.js";
 import { renderWaveEditor } from "./ui/renderWaveEditor.js";
 import { renderWaveSpawnEditor } from "./ui/renderWaveSpawnEditor.js";
+import { exportPopText } from "./export/exportPopText.js";
 
 const root = document.querySelector("#app");
 const editorTabs = [
@@ -127,6 +128,24 @@ function setActiveEditor(nextEditorId) {
   render();
 }
 
+function exportPopulation() {
+  const text = exportPopText({ population, missions, waves });
+  const filename = `${population.mapId || "mission"}_custom.pop`;
+  downloadTextFile(filename, text);
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
 function render() {
   const focusState = captureFocus(root);
   const selectedMap = findMap(population.mapId);
@@ -169,6 +188,7 @@ function renderActiveEditor(editorId, content, context) {
         waves,
         missions,
         onChange: setPopulation,
+        onExport: exportPopulation,
       });
       break;
     case "missions":
