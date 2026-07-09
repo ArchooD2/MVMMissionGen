@@ -15,7 +15,7 @@ export function createMission(overrides = {}) {
     initialCooldown: normalizeTextValue(overrides.initialCooldown ?? preset?.initialCooldown ?? "30"),
     cooldownTime: normalizeTextValue(overrides.cooldownTime ?? preset?.cooldownTime ?? "30"),
     desiredCount: normalizeTextValue(overrides.desiredCount ?? preset?.desiredCount ?? "1"),
-    bot: createMissionBot(overrides.bot?.template ?? preset?.template ?? ""),
+    bot: overrides.bot ? createMissionBotFromObject(overrides.bot) : createMissionBot(preset?.template ?? ""),
   };
 }
 
@@ -56,19 +56,23 @@ export function removeMission(missions, missionId) {
 }
 
 function createMissionBot(template) {
+  return createMissionBotFromObject({ template });
+}
+
+function createMissionBotFromObject(overrides = {}) {
   return {
-    templateId: "",
-    template,
-    name: "",
-    class: "",
-    skill: "",
-    health: "",
-    classIcon: "",
-    scale: "",
-    attributes: [],
-    weaponRestrictions: "",
-    behaviorModifiers: "",
-    tags: [],
+    templateId: overrides.templateId ?? "",
+    template: overrides.template ?? "",
+    name: overrides.name ?? "",
+    class: overrides.class ?? "",
+    skill: overrides.skill ?? "",
+    health: normalizeTextValue(overrides.health ?? ""),
+    classIcon: overrides.classIcon ?? "",
+    scale: normalizeTextValue(overrides.scale ?? ""),
+    attributes: [...(overrides.attributes ?? [])],
+    weaponRestrictions: overrides.weaponRestrictions ?? "",
+    behaviorModifiers: overrides.behaviorModifiers ?? "",
+    tags: [...(overrides.tags ?? [])],
   };
 }
 
@@ -94,3 +98,5 @@ function normalizeTextValue(value) {
 
   return String(value);
 }
+
+

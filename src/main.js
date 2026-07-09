@@ -5,6 +5,7 @@ import { createPopulation } from "./state/createPopulation.js";
 import { createWaveSpawn, updateWaveSpawn } from "./state/createWaveSpawn.js";
 import { createWave } from "./state/createWave.js";
 import { renderBotEditor } from "./ui/renderBotEditor.js";
+import { renderImportEditor } from "./ui/renderImportEditor.js";
 import { renderMissionEditor } from "./ui/renderMissionEditor.js";
 import { renderPopulationEditor } from "./ui/renderPopulationEditor.js";
 import { renderWaveEditor } from "./ui/renderWaveEditor.js";
@@ -12,6 +13,7 @@ import { renderWaveSpawnEditor } from "./ui/renderWaveSpawnEditor.js";
 
 const root = document.querySelector("#app");
 const editorTabs = [
+  { id: "import", label: "Import", title: "Import .pop" },
   { id: "population", label: "Mission", title: "Population Editor" },
   { id: "missions", label: "Missions", title: "Mission Editor" },
   { id: "bot", label: "Bot", title: "Bot Editor" },
@@ -19,12 +21,14 @@ const editorTabs = [
   { id: "wave", label: "Wave", title: "Wave Editor" },
 ];
 
-let activeEditorId = editorTabs[0].id;
+let activeEditorId = "population";
 let bot = createBot();
 let waveSpawn = createWaveSpawn();
 let wave = createWave();
 let population = createPopulation();
 let missions = [];
+let importDraft = "";
+let importResult = null;
 
 function setBot(nextBot) {
   bot = nextBot;
@@ -67,6 +71,28 @@ function setPopulation(nextPopulation) {
   render();
 }
 
+function setImportDraft(nextDraft, options = {}) {
+  importDraft = nextDraft;
+  if (options.render) {
+    render();
+  }
+}
+
+function setImportResult(nextResult) {
+  importResult = nextResult;
+  render();
+}
+
+function applyImport(result) {
+  population = result.population;
+  missions = result.missions;
+  wave = result.wave;
+  bot = result.bot;
+  waveSpawn = result.waveSpawn;
+  activeEditorId = "population";
+  render();
+}
+
 function setActiveEditor(nextEditorId) {
   if (activeEditorId === nextEditorId || !editorTabs.some((tab) => tab.id === nextEditorId)) {
     return;
@@ -101,6 +127,15 @@ function render() {
 
 function renderActiveEditor(editorId, content, context) {
   switch (editorId) {
+    case "import":
+      renderImportEditor(content, {
+        draft: importDraft,
+        result: importResult,
+        onDraftChange: setImportDraft,
+        onParse: setImportResult,
+        onApply: applyImport,
+      });
+      break;
     case "population":
       renderPopulationEditor(content, {
         population,
