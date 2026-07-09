@@ -14,7 +14,7 @@ export function renderImportEditor(root, { draft, result, onDraftChange, onParse
   renderPreview(previewStack, "Imported State Preview", result ? JSON.stringify({
     population: result.population,
     missions: result.missions,
-    wave: result.wave,
+    waves: result.waves ?? [result.wave],
     bot: result.bot,
     waveSpawn: result.waveSpawn,
   }, null, 2) : "No import parsed yet.");
@@ -115,7 +115,8 @@ function renderSummary(result) {
     `Sample waves found: ${result.summary.waveCount}`,
     `Sample missions found: ${result.summary.missionCount}`,
     `Imported missions: ${result.summary.importedMissionCount}`,
-    `Imported WaveSpawns from first wave: ${result.summary.importedWaveSpawnCount}`,
+    `Imported waves: ${result.summary.importedWaveCount ?? 1}`,
+    `Imported WaveSpawns: ${result.summary.importedWaveSpawnCount}`,
     `Warnings: ${result.warnings.length}`,
   ].join("\n");
 }
@@ -146,4 +147,5 @@ function createElement(tagName, className = "") {
   }
   return element;
 }
+
 

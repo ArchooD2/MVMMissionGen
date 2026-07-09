@@ -7,29 +7,57 @@
 import { exportWave } from "../export/exportWave.js";
 import { validateWave } from "../validation/validateWave.js";
 
-export function renderWaveEditor(root, { wave, currentWaveSpawn, currentBot, spawnLocations = [], tankPaths = [], selectedMap = null, onChange }) {
+export function renderWaveEditor(root, {
+  wave,
+  waves = wave ? [wave] : [],
+  activeWaveIndex = 0,
+  currentWaveSpawn,
+  currentBot,
+  spawnLocations = [],
+  tankPaths = [],
+  selectedMap = null,
+  onChange,
+  onSelectWave,
+  onAddWave,
+  onRemoveWave,
+}) {
   root.innerHTML = "";
 
+  const activeWave = waves[activeWaveIndex] ?? wave;
   const controls = createElement("form", "panel controls");
   controls.addEventListener("submit", (event) => event.preventDefault());
 
   const previewStack = createElement("div", "preview-stack");
   root.append(controls, previewStack);
 
-  renderControls(controls, wave, currentWaveSpawn, currentBot, onChange);
-  renderValidation(controls, wave, spawnLocations, tankPaths);
-  renderPreview(previewStack, "Current Wave Object", JSON.stringify(wave, null, 2));
-  renderPreview(previewStack, "Wave Block Preview", exportWave(wave, 0, selectedMap));
+  renderControls(controls, {
+    wave: activeWave,
+    waves,
+    activeWaveIndex,
+    currentWaveSpawn,
+    currentBot,
+    onChange,
+    onSelectWave,
+    onAddWave,
+    onRemoveWave,
+  });
+  renderValidation(controls, activeWave, spawnLocations, tankPaths);
+  renderPreview(previewStack, "Current Wave Object", JSON.stringify(activeWave, null, 2));
+  renderPreview(previewStack, "Wave Block Preview", exportWave(activeWave, 0, selectedMap));
 }
 
-function renderControls(root, wave, currentWaveSpawn, currentBot, onChange) {
+function renderControls(root, props) {
+  const { wave, waves, activeWaveIndex, currentWaveSpawn, currentBot, onChange, onSelectWave, onAddWave, onRemoveWave } = props;
   root.append(createHeading("Wave Settings"));
 
   const grid = createElement("div", "field-grid");
   root.append(grid);
 
+  grid.append(renderWaveSelector({ waves, activeWaveIndex, onSelectWave, onAddWave, onRemoveWave }));
+
   const summary = createElement("div", "summary-strip");
   summary.append(
+    renderSummaryValue("Wave", `${activeWaveIndex + 1} / ${waves.length}`),
     renderSummaryValue("WaveSpawns", wave.waveSpawns.length),
     renderSummaryValue("TotalCurrency", calculateWaveCurrency(wave)),
   );
@@ -76,6 +104,37 @@ function renderControls(root, wave, currentWaveSpawn, currentBot, onChange) {
     addButton,
     renderWaveSpawnList(wave, onChange),
   );
+}
+
+function renderWaveSelector({ waves, activeWaveIndex, onSelectWave, onAddWave, onRemoveWave }) {
+  const wrapper = createElement("section", "wave-selector");
+  const label = createElement("div", "attribute-label");
+  label.textContent = "Waves";
+
+  const row = createElement("div", "wave-selector-row");
+  const select = createElement("select");
+  select.id = "wave-selector";
+  waves.forEach((wave, index) => {
+    const labelText = wave.description || `Wave ${index + 1}`;
+    select.append(new Option(`${index + 1}: ${labelText}`, String(index)));
+  });
+  select.value = String(activeWaveIndex);
+  select.addEventListener("change", () => onSelectWave?.(Number(select.value)));
+
+  const add = createElement("button", "button");
+  add.type = "button";
+  add.textContent = "Add Wave";
+  add.addEventListener("click", () => onAddWave?.());
+
+  const remove = createElement("button", "button secondary");
+  remove.type = "button";
+  remove.textContent = "Remove Wave";
+  remove.disabled = waves.length <= 1;
+  remove.addEventListener("click", () => onRemoveWave?.(activeWaveIndex));
+
+  row.append(select, add, remove);
+  wrapper.append(label, row);
+  return wrapper;
 }
 
 function renderWaveSpawnList(wave, onChange) {
@@ -229,6 +288,3 @@ function createElement(tagName, className = "") {
   }
   return element;
 }
-
-
-

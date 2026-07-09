@@ -2,12 +2,13 @@
 import { validateMission } from "./validateMission.js";
 import { validateWave } from "./validateWave.js";
 
-export function validatePopulation(population, wave, missions = []) {
+export function validatePopulation(population, waves, missions = []) {
   const errors = [];
   const warnings = [];
   const selectedMap = findMap(population.mapId);
   const spawnNames = selectedMap?.spawnNames ?? [];
   const tankPaths = selectedMap?.tankPaths ?? [];
+  const waveList = normalizeWaveList(waves);
 
   if (!population.rootName) {
     errors.push("Population root name is required.");
@@ -45,17 +46,19 @@ export function validatePopulation(population, wave, missions = []) {
     warnings.push("StartingCurrency is unusually high compared with the current samples.");
   }
 
-  if (!wave) {
+  if (waveList.length === 0) {
     errors.push("At least one Wave is required.");
-  } else {
+  }
+
+  waveList.forEach((wave, index) => {
     const waveValidation = validateWave(wave, { spawnNames, tankPaths, selectedMap });
     for (const error of waveValidation.errors) {
-      errors.push(`Wave: ${error}`);
+      errors.push(`Wave ${index + 1}: ${error}`);
     }
     for (const warning of waveValidation.warnings) {
-      warnings.push(`Wave: ${warning}`);
+      warnings.push(`Wave ${index + 1}: ${warning}`);
     }
-  }
+  });
 
   missions.forEach((mission, index) => {
     const missionValidation = validateMission(mission, { spawnNames });
@@ -76,6 +79,14 @@ export function validatePopulation(population, wave, missions = []) {
   }
 
   return { errors, warnings };
+}
+
+function normalizeWaveList(waves) {
+  if (Array.isArray(waves)) {
+    return waves.filter(Boolean);
+  }
+
+  return waves ? [waves] : [];
 }
 
 function validateNonNegativeNumber(value, label, errors, options = {}) {

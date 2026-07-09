@@ -3,8 +3,9 @@ import { formatPopValue, indent } from "./exportBot.js";
 import { exportMission } from "./exportMission.js";
 import { exportWave } from "./exportWave.js";
 
-export function exportPopulation(population, wave, missions = []) {
+export function exportPopulation(population, waves, missions = []) {
   const selectedMap = findMap(population.mapId);
+  const waveList = normalizeWaveList(waves);
   const lines = [];
 
   for (const baseFile of population.baseFiles) {
@@ -45,9 +46,20 @@ export function exportPopulation(population, wave, missions = []) {
     lines.push(exportMission(mission, 1));
   }
 
-  lines.push("");
-  lines.push(exportWave(wave, 1, selectedMap));
+  for (const wave of waveList) {
+    lines.push("");
+    lines.push(exportWave(wave, 1, selectedMap));
+  }
+
   lines.push("}");
 
   return lines.join("\n");
+}
+
+function normalizeWaveList(waves) {
+  if (Array.isArray(waves)) {
+    return waves.filter(Boolean);
+  }
+
+  return waves ? [waves] : [];
 }

@@ -3,7 +3,7 @@ import { applyMapDefaults, updatePopulation } from "../state/createPopulation.js
 import { exportPopulation } from "../export/exportPopulation.js";
 import { validatePopulation } from "../validation/validatePopulation.js";
 
-export function renderPopulationEditor(root, { population, wave, missions = [], onChange }) {
+export function renderPopulationEditor(root, { population, waves, wave, missions = [], onChange }) {
   root.innerHTML = "";
 
   const controls = createElement("form", "panel controls");
@@ -12,12 +12,13 @@ export function renderPopulationEditor(root, { population, wave, missions = [], 
   const previewStack = createElement("div", "preview-stack");
   root.append(controls, previewStack);
 
-  const validation = validatePopulation(population, wave, missions);
+  const waveList = waves ?? (wave ? [wave] : []);
+  const validation = validatePopulation(population, waveList, missions);
 
   renderControls(controls, population, onChange);
   renderValidation(controls, validation);
-  renderPreview(previewStack, "Current Population Object", JSON.stringify({ ...population, missions, wave }, null, 2));
-  renderPreview(previewStack, "Population .pop Preview", exportPopulation(population, wave, missions), validation);
+  renderPreview(previewStack, "Current Population Object", JSON.stringify({ ...population, missions, waves: waveList }, null, 2));
+  renderPreview(previewStack, "Population .pop Preview", exportPopulation(population, waveList, missions), validation);
 }
 
 function renderControls(root, population, onChange) {
@@ -238,5 +239,6 @@ function createElement(tagName, className = "") {
   }
   return element;
 }
+
 
 

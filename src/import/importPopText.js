@@ -17,6 +17,7 @@ export function importPopText(source, options = {}) {
     return {
       population: createPopulation(),
       missions: [],
+      waves: [createWave()],
       wave: createWave(),
       bot: createBot(),
       waveSpawn: createWaveSpawn(),
@@ -32,14 +33,11 @@ export function importPopText(source, options = {}) {
     .map((missionNode, index) => importMission(missionNode, index, warnings));
 
   const waveNodes = root.children.filter((child) => child.type === "block" && child.name === "Wave");
-  if (waveNodes.length > 1) {
-    warnings.push(`Imported the first Wave only. ${waveNodes.length - 1} additional Wave block(s) were left out of the editor state.`);
-  }
+  const waves = waveNodes.length > 0
+    ? waveNodes.map((waveNode) => importWave(waveNode, warnings))
+    : [createWave()];
 
-  const wave = waveNodes[0]
-    ? importWave(waveNodes[0], warnings)
-    : createWave();
-
+  const wave = waves[0];
   const firstEntry = wave.waveSpawns[0];
   const bot = firstEntry?.bot ?? createBot();
   const waveSpawn = firstEntry?.waveSpawn ?? createWaveSpawn();
@@ -47,6 +45,7 @@ export function importPopText(source, options = {}) {
   return {
     population,
     missions,
+    waves,
     wave,
     bot,
     waveSpawn,
@@ -54,7 +53,8 @@ export function importPopText(source, options = {}) {
       ...summary,
       importedMapId,
       importedMissionCount: missions.length,
-      importedWaveSpawnCount: wave.waveSpawns.length,
+      importedWaveCount: waves.length,
+      importedWaveSpawnCount: waves.reduce((total, importedWave) => total + importedWave.waveSpawns.length, 0),
     },
     warnings,
   };
@@ -223,3 +223,4 @@ function warnUnsupportedBlocks(node, supportedBlockNames, label, warnings) {
 function normalizeYesNo(value) {
   return String(value).toLowerCase() === "yes" ? "yes" : "no";
 }
+

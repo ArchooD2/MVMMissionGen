@@ -24,7 +24,8 @@ const editorTabs = [
 let activeEditorId = "population";
 let bot = createBot();
 let waveSpawn = createWaveSpawn();
-let wave = createWave();
+let waves = [createWave()];
+let activeWaveIndex = 0;
 let population = createPopulation();
 let missions = [];
 let importDraft = "";
@@ -41,7 +42,30 @@ function setWaveSpawn(nextWaveSpawn) {
 }
 
 function setWave(nextWave) {
-  wave = nextWave;
+  waves = waves.map((wave, index) => index === activeWaveIndex ? nextWave : wave);
+  render();
+}
+
+function setActiveWave(nextIndex) {
+  if (nextIndex < 0 || nextIndex >= waves.length) {
+    return;
+  }
+  activeWaveIndex = nextIndex;
+  render();
+}
+
+function addWave() {
+  waves = [...waves, createWave()];
+  activeWaveIndex = waves.length - 1;
+  render();
+}
+
+function removeWave(indexToRemove) {
+  if (waves.length <= 1) {
+    return;
+  }
+  waves = waves.filter((_, index) => index !== indexToRemove);
+  activeWaveIndex = Math.min(activeWaveIndex, waves.length - 1);
   render();
 }
 
@@ -86,7 +110,8 @@ function setImportResult(nextResult) {
 function applyImport(result) {
   population = result.population;
   missions = result.missions;
-  wave = result.wave;
+  waves = result.waves ?? [result.wave];
+  activeWaveIndex = 0;
   bot = result.bot;
   waveSpawn = result.waveSpawn;
   activeEditorId = "population";
@@ -105,6 +130,7 @@ function setActiveEditor(nextEditorId) {
 function render() {
   const focusState = captureFocus(root);
   const selectedMap = findMap(population.mapId);
+  const wave = waves[activeWaveIndex] ?? waves[0] ?? createWave();
   const spawnLocations = getMapSpawnLocations(population);
   const tankPaths = getMapTankPaths(population);
   root.innerHTML = "";
@@ -139,7 +165,7 @@ function renderActiveEditor(editorId, content, context) {
     case "population":
       renderPopulationEditor(content, {
         population,
-        wave,
+        waves,
         missions,
         onChange: setPopulation,
       });
@@ -169,12 +195,17 @@ function renderActiveEditor(editorId, content, context) {
     case "wave":
       renderWaveEditor(content, {
         wave,
+        waves,
+        activeWaveIndex,
         currentWaveSpawn: waveSpawn,
         currentBot: bot,
         spawnLocations: context.spawnLocations,
         tankPaths: context.tankPaths,
         selectedMap: context.selectedMap,
         onChange: setWave,
+        onSelectWave: setActiveWave,
+        onAddWave: addWave,
+        onRemoveWave: removeWave,
       });
       break;
   }
@@ -241,7 +272,7 @@ function getTabCount(tabId) {
     case "missions":
       return missions.length;
     case "wave":
-      return wave.waveSpawns.length;
+      return waves.length;
     default:
       return null;
   }
@@ -314,3 +345,4 @@ function createElement(tagName, className = "") {
 }
 
 render();
+
