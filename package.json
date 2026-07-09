@@ -1,0 +1,6 @@
+﻿{
+  "type": "module",
+  "scripts": {
+    "check:samples": "node scripts/check-sample-popfiles.mjs"
+  }
+}
